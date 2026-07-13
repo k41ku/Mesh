@@ -1,4 +1,4 @@
-local_version = "0.0.1"
+local_version = "0.0.2"
 from instagrapi import Client
 from instagrapi import exceptions
 import getpass
@@ -8,12 +8,13 @@ import argparse
 parser = argparse.ArgumentParser()
 parser = argparse.ArgumentParser(description="Mesh by k41ku\nOSINT tool made to discover social circles of people of interest based of Instagram \"friends\" (mutual follow between multiple people)")
 
-parser.add_argument("-V", "--verbose", action="store_true", help="enable verbose output (currently does nothing)")
-parser.add_argument("-v", "--version", action="store_true", help="show version")
+parser.add_argument("-V", "--verbose", action="store_true", help="Enable verbose output (currently does nothing)")
+parser.add_argument("-v", "--version", action="store_true", help="Show version")
 parser.add_argument("-L", "--level", type=int, default=1, help="Set how deep this tool will go [1]")
 parser.add_argument("-mx", "--max-follows", type=int, default=100, help="Max followers/following before target is skipped [100]")
 parser.add_argument("--country", default="US", help="Account's country code [US]")
 parser.add_argument("--locale", default="en_US", help="Account's locale [en_US]")
+parser.add_argument("--sessionid", action="store_true", help="Log in by Session ID instead of username and password")
 
 args = parser.parse_args()
 
@@ -53,8 +54,13 @@ cl = Client()
 cl.set_country(args.country)
 cl.set_locale(args.locale)
 cl.delay_range = [2, 5]
-username = input("Enter your username: \n")
-password = getpass.getpass("Enter your password: ")
+
+if args.sessionid:
+  sessionid = getpass.getpass("Enter sessionid: ")
+  cl.login_by_sessionid(sessionid)
+else:
+  username = input("Enter your username: \n")
+  password = getpass.getpass("Enter your password: ")
 
 log("> Trying to log in...")
 while True:
