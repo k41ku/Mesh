@@ -12,6 +12,8 @@ parser.add_argument("-V", "--verbose", action="store_true", help="enable verbose
 parser.add_argument("-v", "--version", action="store_true", help="show version")
 parser.add_argument("-L", "--level", type=int, default=1, help="Set how deep this tool will go [1]")
 parser.add_argument("-mx", "--max-follows", type=int, default=100, help="Max followers/following before target is skipped [100]")
+parser.add_argument("--country", default="US", help="Account's country code [US]")
+parser.add_argument("--locale", default="en_US", help="Account's locale [en_US]")
 
 args = parser.parse_args()
 
@@ -48,6 +50,9 @@ def log(msg):
 
 # --- login ---
 cl = Client()
+cl.set_country(args.country)
+cl.set_locale(args.locale)
+cl.delay_range = [2, 5]
 username = input("Enter your username: \n")
 password = getpass.getpass("Enter your password: ")
 
