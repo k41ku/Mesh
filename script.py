@@ -1,14 +1,15 @@
-local_version = "0.0.2"
+local_version = "1.0.0"
 from instagrapi import Client
 from instagrapi import exceptions
 import getpass
+import networkx as nx
 
 # --- arguments ---
 import argparse
 parser = argparse.ArgumentParser()
 parser = argparse.ArgumentParser(description="Mesh by k41ku\nOSINT tool made to discover social circles of people of interest based of Instagram \"friends\" (mutual follow between multiple people)")
 
-parser.add_argument("-V", "--verbose", action="store_true", help="Enable verbose output (currently does nothing)")
+parser.add_argument("-V", "--verbose", action="store_true", help="Enable verbose output")
 parser.add_argument("-v", "--version", action="store_true", help="Show version")
 parser.add_argument("-L", "--level", type=int, default=1, help="Set how deep this tool will go [1]")
 parser.add_argument("-mx", "--max-follows", type=int, default=100, help="Max followers/following before target is skipped [100]")
@@ -61,26 +62,25 @@ if args.sessionid:
 else:
   username = input("Enter your username: \n")
   password = getpass.getpass("Enter your password: ")
-
-log("> Trying to log in...")
-while True:
-  try:
-    cl.login(username, password)
-    cl.get_timeline_feed()
-    log("> Login succesful.")
-    break
-  except exceptions.BadPassword:
-    log("> Login failed.")
-    log(cl.last_json)
-    password = getpass.getpass("Invalid password. try again: \n")
-  except exceptions.UnknownError:
-    log("> Login failed.")
-    username = input("A account with this username doesnt exist. Try again: \n")
-  except exceptions.ChallengeRequired:
-    log("> Login failed.")
-    input("In the app, confirm \"I tried to log in\" then press Enter to continue")
-    cl.challenge_resolve(cl.last_json)
-    break
+  log("> Trying to log in...")
+  while True:
+    try:
+      cl.login(username, password)
+      cl.get_timeline_feed()
+      log("> Login succesful.")
+      break
+    except exceptions.BadPassword:
+      log("> Login failed.")
+      log(cl.last_json)
+      password = getpass.getpass("Invalid password. try again: \n")
+    except exceptions.UnknownError:
+      log("> Login failed.")
+      username = input("A account with this username doesnt exist. Try again: \n")
+    except exceptions.ChallengeRequired:
+      log("> Login failed.")
+      input("In the app, confirm \"I tried to log in\" then press Enter to continue")
+      cl.challenge_resolve(cl.last_json)
+      break
 
 print("logged in! \n")
 target = input("Enter target username:\n")
@@ -108,10 +108,28 @@ log(f"> Creating {target} friends list...")
 friends = list(set(following_usernames) & set(follower_usernames))
 print("\n".join(friends))
 circles = {}
-for secondary in friends:
+for n, secondary in enumerate(friends, 1):
   if secondary == target:
     continue
+  log(f"> [{n}/{len(friends)}] Fetching ID for {secondary}...")
   sec_id = cl.user_id_from_username(secondary)
+  log(f"> [{n}/{len(friends)}] Fetching followers for {secondary} ({sec_id})...")
   sec_followers = [u.username for u in cl.user_followers(sec_id).values()]
+  log(f"> [{n}/{len(friends)}] Fetching following for {secondary}...")
   sec_following = [u.username for u in cl.user_following(sec_id).values()]
   circles[secondary] = list(set(sec_followers) & set(sec_following))
+  log(f"> [{n}/{len(friends)}] {secondary} has {len(circles[secondary])} friends")
+
+log("> Building graph...")
+G = nx.Graph()
+for person, their_friends in circles.items():
+  for f in their_friends:
+    if f in friends or f == target:
+      G.add_edge(person, f)
+
+log("> Finding circles...")
+cliques = list(nx.find_cliques(G))
+log("> Building a mesh...")
+for i, clique in enumerate(cliques, 1):
+  print(f"\nCircle {i}:")
+  print("\n".join(clique))
