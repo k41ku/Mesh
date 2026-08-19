@@ -6,7 +6,6 @@ import networkx as nx
 
 # --- arguments ---
 import argparse
-parser = argparse.ArgumentParser()
 parser = argparse.ArgumentParser(description="Mesh by k41ku\nOSINT tool made to discover social circles of people of interest based of Instagram \"friends\" (mutual follow between multiple people)")
 
 parser.add_argument("-V", "--verbose", action="store_true", help="Enable verbose output")
